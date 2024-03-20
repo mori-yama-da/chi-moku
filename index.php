@@ -17,19 +17,8 @@ function main() {
         if($type == "text") { // メッセージがテキストのとき
             $text = $event->{"message"}->{"text"}; // ユーザから送信されたメッセージテキスト
             if($text == "地震") { // 「地震」というメッセージがユーザから来たとき
-                $earthquake = getLatestEarthquake(); // 最新の地震情報を一件取得（api.phpの中に書いてある関数）$earthquakeの中身はここ→ https://www.p2pquake.net/json_api_v2/
-                $messages.array_push($messages, [
-                    "type" => "location",
-                    "title" => "最新の地震情報",
-                    "address" => "場所：" . $earthquake["hypocenter"]["name"],
-                    "latitude" => $earthquake["hypocenter"]["latitude"],
-                    "longitude" => $earthquake["hypocenter"]["longitude"]
-                ]);
-                // 一度に送れるメッセージは5件までなので注意
-                $messages.array_push($messages, ["type" => "text", "text" => "最新の地震情報です。"]);
-                $messages.array_push($messages, ["type" => "text", "text" => "場所は" . $earthquake["hypocenter"]["name"] . "です。"]);
-                $messages.array_push($messages, ["type" => "text", "text" => "震度は" . $earthquake["hypocenter"]["magnitude"] . "です。"]);
-                $messages.array_push($messages, ["type" => "text", "text" => "発生日時は" . $earthquake["time"] . "です。"]);
+                $answer = call_chatGPT($text); // chatGPTにメッセージを送信して返答を取得
+                $messages.array_push($messages, ["type" => "text", "text" =>  $answer ]);
             } else {
                 $messages.array_push($messages, ["type" => "text", "text" => $text]); // 適当にオウム返し
             }
