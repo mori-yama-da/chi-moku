@@ -1,6 +1,13 @@
 <?php
 require('api.php');
 
+require('vendor/autoload.php');
+require_once(dirname(__FILE__) . "/vendor/autoload.php"); //ライブラリの読み込み
+/* 環境変数の読み込み */
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv->load();
+/* ***** */
+
 function main() {
     /* イベント（ユーザからの何らかのアクション）を取得．特にいじらなくてOK． */
     $json_string = file_get_contents('php://input');
@@ -16,22 +23,28 @@ function main() {
 
         if($type == "text") { // メッセージがテキストのとき
             $text = $event->{"message"}->{"text"}; // ユーザから送信されたメッセージテキスト
-            if($text == "目標達成") { // 「地震」というメッセージがユーザから来たとき
+            if($text == "目標達成") { // 「目標達成」というメッセージがユーザから来たとき
                 $userId = $event->{'source'}->{'userId'};
+                $messages.array_push($messages, ["type" => "text", "text" =>  $userId ]);
                 //if (!empty($variable)) {
                 //    $messages.array_push($messages, ["type" => "text", "text" => "現状確認" ]);// 変数が空でない場合の処理
                 //} else {
                 //    $messages.array_push($messages, ["type" => "text", "text" => $text ]);// 変数が空の場合の処理
                 //}
-                
-                $messages.array_push($messages, ["type" => "text", "text" => $userId ]);
-            } else if($text == "現状確認") { // 「地震」というメッセージがユーザから来たとき
-                
-            } else if($text == "目標変更") { // 「地震」というメッセージがユーザから来たとき
-                
+            } else if($text == "現状確認") { // 「現状確認」というメッセージがユーザから来たとき
+                $messages.array_push($messages, ["type" => "text", "text" =>  $text ]);
+            } else if($text == "目標変更") { // 「目標変更」というメッセージがユーザから来たとき
+                $messages.array_push($messages, ["type" => "text", "text" =>  $text ]);
             } else {
                 $userId = $event->{'source'}->{'userId'};
-                $pronpt = "あなたは私のコーチです．
+
+                // // Get user profile
+                // $httpClient = new \LINE\LINEBot\HTTPClient\CurlHTTPClient(getenv('CHANNEL_ACCESS_TOKEN'));
+                // $bot = new \LINE\LINEBot($httpClient, ['channelSecret' => 'YOUR_CHANNEL_SECRET']);
+                // $profile = $bot->getProfile($userId)->getJSONDecodedBody();
+                // $userName = $profile['displayName'];
+
+                $prompt = "あなたは私のコーチです．
                     \n目標：毎日1km以上ランニングする
                     \n\n小目標1：靴を履く
                     \n小目標2：外に出る
@@ -67,9 +80,58 @@ function main() {
                     \n\nこのように，目標に向けて，笑えるくらい初歩的なステップから始め，各小目標を3日間継続できたら次のステップに進み，前の小目標は行わない，もしくは取り入れた形で10の小目標を設定してください．最終的には小目標10で設定した目標を達成できるようにしてください．また，抽象的な小目標ではなく，数値目標にしてください．前置きは80字程度にしてください．
                     \n\n上記のことを踏まえて，下記の目標達成に向けて小目標を設定してください．
                     \n\n目標：" . $text;
-                // $answer = call_chatGPT($pronpt); // chatGPTにメッセージを送信して返答を取得
+                // $answer = call_chatGPT($prompt); // chatGPTにメッセージを送信して返答を取得
+                $answer = "小目標1：運動用のマットを購入する
+                    \n小目標2：運動のための時間を設定する
+                    \n小目標3：運動着を用意する
+                    \n小目標4：ストレッチを始める
+                    \n小目標5：腹筋運動を10回行う
+                    \n小目標6：腹筋運動を30回行う
+                    \n小目標7：腹筋運動を50回行う
+                    \n小目標8：腹筋運動を100回行う";
+                
+                
+                // データベースに接続
                 // $messages.array_push($messages, ["type" => "text", "text" =>  $answer ]);
-                $messages.array_push($messages, ["type" => "text", "text" => $text]); // 適当にオウム返し
+                $dbdsn = getenv("DB_DSN");
+                $userName = getenv("DB_USER");
+                $pass = getenv("DB_PASSWORD");
+                $dbname = getenv("DB_NAME");
+                
+                $conn = new mysqli($dbdsn, $userName, $pass, $dbname);
+                // 接続をチェック
+                if ($conn->connect_error) {
+                    //コンソールにエラーメッセージを表示
+                    echo "Connection failed: " . $conn->connect_error;
+                    $messages.array_push($messages, ["type" => "text", "text" =>  $conn->connect_error ]);
+                    $messages.array_push($messages, ["type" => "text", "text" =>  "エラー" ]);
+                } else {
+                    $messages.array_push($messages, ["type" => "text", "text" =>  "つながりました" ]);
+                }
+
+                // $output_lines = explode("\n", $answer);// 出力を一行ごとに分割して配列に格納
+
+                // if ($conn->connect_error) {
+                //     die("Connection failed: " . $conn->connect_error);
+                // }
+
+                // // 各行をデータベースに格納
+                // foreach ($output_lines as $line) {
+                //     // データベースに行を挿入
+                //     $sql = "INSERT INTO output_table (line) VALUES ('$line')";
+                //     if ($conn->query($sql) === TRUE) {
+                //         echo "Record inserted successfully: $line\n";
+                //     } else {
+                //         echo "Error inserting record: " . $conn->error;
+                //     }
+                // }
+
+                // データベース接続を閉じる
+                $conn->close();
+
+                
+
+                // $messages.array_push($messages, ["type" => "text", "text" => $text]); // 適当にオウム返し
             }
 
         } else if($type == "sticker") { // メッセージがスタンプのとき
