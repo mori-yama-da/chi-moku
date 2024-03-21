@@ -1,5 +1,6 @@
 <?php
 require('vendor/autoload.php');
+require_once(dirname(__FILE__) . "/vendor/autoload.php"); //ライブラリの読み込み
 /* 環境変数の読み込み */
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
@@ -21,26 +22,65 @@ function sendMessage($post_data) {
     curl_close($ch);
 }
 
-function callApi($url) {
-    // この関数はいじらなくてOK
-    $ch = curl_init(); //開始
 
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true); // 証明書の検証を行わない
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);  // curl_execの結果を文字列で返す
+// この関数だけ使うことも可能
+// 引数にメッセージを入力して使う
+// 例：call_chatGPT('おはよう')
+function call_chatGPT($prompt) {
+    $OPENAI_API_KEY = getenv("CHATGPT_API_KEY");
 
-    $response =  curl_exec($ch);
-    $result = json_decode($response, true);
+    $ch = curl_init();
+    $headers  = [
+        'Accept: application/json',
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $OPENAI_API_KEY
+    ];
 
-    curl_close($ch); //終了
+    // 送るメッセージや使うモデルを設定
+    // max_tokens 省略したらエラーが戻ってきたので入れといたほうがいいかも
+    $postData = [
+        'model' => "gpt-4-1106-preview",// "gpt-3.5-turbo",
+        'messages' => [
+            [
+                'role' => 'system',
+                'content' => $prompt,
+            ]
+        ],
+        'max_tokens' => 3000,
+    ];
 
-    return $result;
-}
+    // データを送信
+    curl_setopt($ch, CURLOPT_URL, 'https://api.openai.com/v1/chat/completions');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($postData));
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
-function getLatestEarthquake() {
-    // この中身は好きに変えてOK
-    $result = callApi("https://api.p2pquake.net/v2/jma/quake");
-    $earthquake =  $result[0]["earthquake"]; // ここを変えると色々好きな情報を取ってこられる．https://www.p2pquake.net/json_api_v2/
-    return $earthquake;
+    // 成功した場合はメッセージを失敗した場合はfalseを返す
+
+    $result = curl_exec($ch);
+
+    if ($result === false) {
+        return false;
+    }
+
+    $decoded_json = json_decode($result, true);
+    return $decoded_json["choices"][0]["message"]["content"];
+};
+
+function writeLog_gpt($institution, $login_num, $message_from_gpt){
+    $txt_name = $institution . $login_num;
+    $filename = './log/gpt/'. $txt_name .'.txt';
+
+    // ファイルを開く（'w'は書き込みモード）
+    $fp = fopen($filename, 'a');
+
+    // ファイルに書き込む
+    $data = "\n". $institution ."\n". $login_num ."\n" . date('Y-m-d H:i:s') ."\n";
+    $data = $data. $message_from_gpt ."\n"."\n"."\n"."\n";
+    fputs($fp, $data);
+
+    // ファイルを閉じる
+    fclose($fp);
 }
