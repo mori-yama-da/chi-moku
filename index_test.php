@@ -31,7 +31,9 @@ function main() {
                 //} else {
                 //    $messages.array_push($messages, ["type" => "text", "text" => $text ]);// 変数が空の場合の処理
                 //}
-            } else if($text == "現状確認") { // 「現状確認」というメッセージがユーザから来たとき
+            } 
+            else if($text == "現状確認") { // 「現状確認」というメッセージがユーザから来たとき
+                $local_continuity = -1;
                  // データベースに接続
                 // $messages.array_push($messages, ["type" => "text", "text" =>  $answer ]);
                 $dbdsn = getenv("DB_DSN");
@@ -78,84 +80,400 @@ function main() {
                     
                     // 結果をフェッチして表示
                     $stmt->fetch();
-                    //$stmt->close();
 
-                    if ($continuity % 3 == 0) {
-                        $messages.array_push($messages, ["type" => "text", "text" => $continuity]);
-                        $messages.array_push($messages, ["type" => "text", "text" => "卵掛けご飯"]);
-                        $sql1 = "SELECT goal1 FROM goals WHERE user_id = \"$userId\"";
-                        if ($conn instanceof mysqli && $conn->connect_error == null) {
-                            $messages[] = ["type" => "text", "text" => "データベースへの接続が正しく確立されました。"];
-                        } else {
-                            $messages[] = ["type" => "text", "text" => "データベース接続に失敗しました。エラー: " . $conn->connect_error];
-                        }
-    
-
-                        if (isset($sql1) && !empty($sql1)) {
-                            // SQL変数が正しくセットされ、空でないことを確認
-                            $messages.array_push($messages, ["type" => "text", "text" => "SQL is set and not empty: " . $sql1]);
-                        } else {
-                            // SQL変数がセットされていない、または空の場合のメッセージ
-                            $messages.array_push($messages, ["type" => "text", "text" => "SQL is not set or empty"]);
-                        }
-                    
-                        // プリペアドステートメントを使用してSQLインジェクションを防ぐ
-                        $stmt1 = $conn->prepare($sql1);
-
-                        if (!$stmt1) {
-                            //エラーメッセージを表示
-                            echo "Prepare failed: " . $conn->error;
-                            $messages.array_push($messages, ["type" => "text", "text" => "Prepare failed: " . $conn->error]);
-                        } else {
-                            // パラメータをバインドする
-                            $stmt1->bind_param("s", $userId);
-                    
-                            // SQL文を実行する
-                            if ($stmt1->execute()) {
-                                // 結果をバインド
-                                $stmt1->bind_result($goal1);
-                                
-                                // 結果をフェッチして表示
-                                if ($stmt1->fetch()) {
-                                    echo "goal1の値: " . $goal1;
-                                    $messages.array_push($messages, ["type" => "text", "text" => $goal1]);
-                                    echo "取得成功";
-                                    $messages.array_push($messages, ["type" => "text", "text" => "取得成功"]);
-                                } else {
-                                    echo "Fetch failed";
-                                    $messages.array_push($messages, ["type" => "text", "text" => "Fetch failed"]);
-                                }
-                            } else {
-                                echo "Execute failed: " . $stmt->error;
-                                $messages.array_push($messages, ["type" => "text", "text" => "Execute failed: " . $stmt1->error]);
-                            }
-                        }
-                    }
-                } else {
-                    echo "Error: " . $stmt->error;
-                    $messages.array_push($messages, ["type" => "text", "text" =>  "実行エラー" ]);
-                }
-                    
-    
-                    echo "goal1の値: " . $continuity;
-                    // $messages.array_push($messages, ["type" => "text", "text" => $continuity ]);
+                    $local_continuity = $continuity;
+                
 
                     echo "取得成功";
                     // $messages.array_push($messages, ["type" => "text", "text" =>  "取得成功" ]);
                 } else {
-                    echo "Error: " . $stmt1->error;
+                    echo "Error: " . $stmt->error;
                     $messages.array_push($messages, ["type" => "text", "text" =>  "実行エラー" ]);
                 }   
-
-                
-
-                
-                
                 $conn->close();
 
-            } else if($text == "目標変更") { // 「目標変更」というメッセージがユーザから来たとき
+                /*
+                $dbdsn = getenv("DB_DSN");
+                $userName = getenv("DB_USER");
+                $pass = getenv("DB_PASSWORD");
+                $dbname = getenv("DB_NAME");
+                */
+                
+                $conn = new mysqli($dbdsn, $userName, $pass, $dbname);
+                
+                
+                // 接続をチェック
+                if ($conn->connect_error) {
+                    //コンソールにエラーメッセージを表示
+                    echo "Connection failed: " . $conn->connect_error;
+                    $messages.array_push($messages, ["type" => "text", "text" =>  $conn->connect_error ]);
+                    $messages.array_push($messages, ["type" => "text", "text" =>  "エラー" ]);
+                } else {
+                    $messages.array_push($messages, ["type" => "text", "text" =>  "つながりました" ]);
+                }
+
+                // ユーザIDを取得
+                $userId = $event->{'source'}->{'userId'};
+
+                // $messages.array_push($messages, ["type" => "text", "text" =>  "local_continuity / 3: " . $local_continuity / 3 ]);
+                if ($local_continuity / 3 == 0) {
+                    $messages.array_push($messages, ["type" => "text", "text" =>  "1週目です．頑張りましょう．" ]);
+
+                    // $userIdの目標1を取得
+                    $sql_goal1 = "SELECT goal1 FROM goals WHERE user_id = \"$userId\"";
+
+                    // プリペアドステートメントを使用してSQLインジェクションを防ぐ
+                    $stmt_goal1 = $conn->prepare($sql_goal1);
+                    if ($stmt_goal1 === false) {
+                        //エラーメッセージを表示
+                        echo "". $conn->error;
+                        $messages.array_push($messages, ["type" => "text", "text" =>  $conn->error ]);
+                    } else {
+                        // $messages.array_push($messages, ["type" => "text", "text" =>  "インジェクションのとこ成功" ]);
+                    }
+
+                    // パラメータをバインドする
+                    $stmt_goal1->bind_param("s", $userId);
+
+                    // SQL文を実行する
+                    if ($stmt_goal1->execute()) {
+                        // echo "New records created successfully";
+                        // $messages.array_push($messages, ["type" => "text", "text" =>  "実行成功" ]);
+                        // 結果をバインド
+                        $stmt_goal1->bind_result($goal1);
+                        
+                        // 結果をフェッチして表示
+                        $stmt_goal1->fetch();
+                        echo "取得成功";
+                        $messages.array_push($messages, ["type" => "text", "text" =>  $goal1 ]);
+                    } else {
+                        echo "Error: " . $stmt_goal1->error;
+                        $messages.array_push($messages, ["type" => "text", "text" =>  "実行エラー" ]);
+                    }   
+                    $conn->close();
+                } 
+                else if ($local_continuity / 3 == 1) {
+                    $messages.array_push($messages, ["type" => "text", "text" =>  "2週目です．頑張りましょう．" ]);
+
+                    // $userIdの目標2を取得
+                    $sql_goal2 = "SELECT goal2 FROM goals WHERE user_id = \"$userId\"";
+
+                    // プリペアドステートメントを使用してSQLインジェクションを防ぐ
+                    $stmt_goal2 = $conn->prepare($sql_goal2);
+                    if ($stmt_goal2 === false) {
+                        //エラーメッセージを表示
+                        echo "". $conn->error;
+                        $messages.array_push($messages, ["type" => "text", "text" =>  $conn->error ]);
+                    } else {
+                        // $messages.array_push($messages, ["type" => "text", "text" =>  "インジェクションのとこ成功" ]);
+                    }
+
+                    // パラメータをバインドする
+                    $stmt_goal2->bind_param("s", $userId);
+
+                    // SQL文を実行する
+                    if ($stmt_goal2->execute()) {
+                        // echo "New records created successfully";
+                        // $messages.array_push($messages, ["type" => "text", "text" =>  "実行成功" ]);
+                        // 結果をバインド
+                        $stmt_goal2->bind_result($goal2);
+                        
+                        // 結果をフェッチして表示
+                        $stmt_goal2->fetch();
+                        echo "取得成功";
+                        $messages.array_push($messages, ["type" => "text", "text" =>  $goal2 ]);
+                    } else {
+                        echo "Error: " . $stmt_goal2->error;
+                        $messages.array_push($messages, ["type" => "text", "text" =>  "実行エラー" ]);
+                    }   
+                    $conn->close();
+                } 
+                else if ($local_continuity / 3 == 2) {
+                    $messages.array_push($messages, ["type" => "text", "text" =>  "3週目です．頑張りましょう．" ]);
+
+                    // $userIdの目標3を取得
+                    $sql_goal3 = "SELECT goal3 FROM goals WHERE user_id = \"$userId\"";
+                    $conn = new mysqli($dbdsn, $userName, $pass, $dbname);
+                    // プリペアドステートメントを使用してSQLインジェクションを防ぐ
+                    $stmt_goal3 = $conn->prepare($sql_goal3);
+                    if ($stmt_goal3 === false) {
+                        //エラーメッセージを表示
+                        echo "". $conn->error;
+                        $messages.array_push($messages, ["type" => "text", "text" =>  $conn->error ]);
+                    } else {
+                        // $messages.array_push($messages, ["type" => "text", "text" =>  "インジェクションのとこ成功" ]);
+                    }
+
+                    // パラメータをバインドする
+                    $stmt_goal3->bind_param("s", $userId);
+
+                    // SQL文を実行する
+                    if ($stmt_goal3->execute()) {
+                        // echo "New records created successfully";
+                        // $messages.array_push($messages, ["type" => "text", "text" =>  "実行成功" ]);
+                        // 結果をバインド
+                        $stmt_goal3->bind_result($goal3);
+                        
+                        // 結果をフェッチして表示
+                        $stmt_goal3->fetch();
+                        echo "取得成功";
+                        $messages.array_push($messages, ["type" => "text", "text" =>  $goal3 ]);
+                    } else {
+                        echo "Error: " . $stmt_goal3->error;
+                        $messages.array_push($messages, ["type" => "text", "text" =>  "実行エラー" ]);
+                    }
+                    $conn->close();
+                } 
+                else if ($local_continuity / 3 == 3) {
+                    $messages.array_push($messages, ["type" => "text", "text" =>  "4週目です．頑張りましょう．" ]);
+
+                    // $userIdの目標4を取得
+                    $sql_goal4 = "SELECT goal4 FROM goals WHERE user_id = \"$userId\"";
+                    $conn = new mysqli($dbdsn, $userName, $pass, $dbname);
+                    // プリペアドステートメントを使用してSQLインジェクションを防ぐ
+                    $stmt_goal4 = $conn->prepare($sql_goal4);
+                    if ($stmt_goal4 === false) {
+                        //エラーメッセージを表示
+                        echo "". $conn->error;
+                        $messages.array_push($messages, ["type" => "text", "text" =>  $conn->error ]);
+                    } else {
+                        // $messages.array_push($messages, ["type" => "text", "text" =>  "インジェクションのとこ成功" ]);
+                    }
+
+                    // パラメータをバインドする
+                    $stmt_goal4->bind_param("s", $userId);
+
+                    // SQL文を実行する
+                    if ($stmt_goal4->execute()) {
+                        // echo "New records created successfully";
+                        // $messages.array_push($messages, ["type" => "text", "text" =>  "実行成功" ]);
+                        // 結果をバインド
+                        $stmt_goal4->bind_result($goal4);
+                        
+                        // 結果をフェッチして表示
+                        $stmt_goal4->fetch();
+                        echo "取得成功";
+                        $messages.array_push($messages, ["type" => "text", "text" =>  $goal4 ]);
+                    } else {
+                        echo "Error: " . $stmt_goal4->error;
+                        $messages.array_push($messages, ["type" => "text", "text" =>  "実行エラー" ]);
+                    }
+                    $conn->close();
+                }
+                else if($local_continuity / 3 == 4){
+                    $messages.array_push($messages, ["type" => "text", "text" =>  "5週目です．折り返しです！" ]);
+
+                    // $userIdの目標5を取得
+                    $sql_goal5 = "SELECT goal5 FROM goals WHERE user_id = \"$userId\"";
+                    $conn = new mysqli($dbdsn, $userName, $pass, $dbname);
+                    // プリペアドステートメントを使用してSQLインジェクションを防ぐ
+                    $stmt_goal5 = $conn->prepare($sql_goal5);
+                    if ($stmt_goal5 === false) {
+                        //エラーメッセージを表示
+                        echo "". $conn->error;
+                        $messages.array_push($messages, ["type" => "text", "text" =>  $conn->error ]);
+                    } else {
+                        // $messages.array_push($messages, ["type" => "text", "text" =>  "インジェクションのとこ成功" ]);
+                    }
+
+                    // パラメータをバインドする
+                    $stmt_goal5->bind_param("s", $userId);
+
+                    // SQL文を実行する
+                    if ($stmt_goal5->execute()) {
+                        // echo "New records created successfully";
+                        // $messages.array_push($messages, ["type" => "text", "text" =>  "実行成功" ]);
+                        // 結果をバインド
+                        $stmt_goal5->bind_result($goal5);
+                        
+                        // 結果をフェッチして表示
+                        $stmt_goal5->fetch();
+                        echo "取得成功";
+                        $messages.array_push($messages, ["type" => "text", "text" =>  $goal5 ]);
+                    } else {
+                        echo "Error: " . $stmt_goal5->error;
+                        $messages.array_push($messages, ["type" => "text", "text" =>  "実行エラー" ]);
+                    }
+                    $conn->close();
+                }
+                else if($local_continuity / 3 == 5){
+                    $messages.array_push($messages, ["type" => "text", "text" =>  "6週目です．折り返しです！" ]);
+
+                    // $userIdの目標6を取得
+                    $sql_goal6 = "SELECT goal6 FROM goals WHERE user_id = \"$userId\"";
+                    $conn = new mysqli($dbdsn, $userName, $pass, $dbname);
+                    // プリペアドステートメントを使用してSQLインジェクションを防ぐ
+                    $stmt_goal6 = $conn->prepare($sql_goal6);
+                    if ($stmt_goal6 === false) {
+                        //エラーメッセージを表示
+                        echo "". $conn->error;
+                        $messages.array_push($messages, ["type" => "text", "text" =>  $conn->error ]);
+                    } else {
+                        // $messages.array_push($messages, ["type" => "text", "text" =>  "インジェクションのとこ成功" ]);
+                    }
+
+                    // パラメータをバインドする
+                    $stmt_goal6->bind_param("s", $userId);
+
+                    // SQL文を実行する
+                    if ($stmt_goal6->execute()) {
+                        // echo "New records created successfully";
+                        // $messages.array_push($messages, ["type" => "text", "text" =>  "実行成功" ]);
+                        // 結果をバインド
+                        $stmt_goal6->bind_result($goal6);
+                        
+                        // 結果をフェッチして表示
+                        $stmt_goal6->fetch();
+                        echo "取得成功";
+                        $messages.array_push($messages, ["type" => "text", "text" =>  $goal6 ]);
+                    } else {
+                        echo "Error: " . $stmt_goal6->error;
+                        $messages.array_push($messages, ["type" => "text", "text" =>  "実行エラー" ]);
+                    }
+                    $conn->close();
+                }
+                else if($local_continuity / 3 == 6){
+                    $messages.array_push($messages, ["type" => "text", "text" =>  "7週目です．折り返しです！" ]);
+
+                    // $userIdの目標7を取得
+                    $sql_goal7 = "SELECT goal7 FROM goals WHERE user_id = \"$userId\"";
+                    $conn = new mysqli($dbdsn, $userName, $pass, $dbname);
+                    // プリペアドステートメントを使用してSQLインジェクションを防ぐ
+                    $stmt_goal7 = $conn->prepare($sql_goal7);
+                    if ($stmt_goal7 === false) {
+                        //エラーメッセージを表示
+                        echo "". $conn->error;
+                        $messages.array_push($messages, ["type" => "text", "text" =>  $conn->error ]);
+                    } else {
+                        // $messages.array_push($messages, ["type" => "text", "text" =>  "インジェクションのとこ成功" ]);
+                    }
+
+                    // パラメータをバインドする
+                    $stmt_goal7->bind_param("s", $userId);
+
+                    // SQL文を実行する
+                    if ($stmt_goal7->execute()) {
+                        // echo "New records created successfully";
+                        // $messages.array_push($messages, ["type" => "text", "text" =>  "実行成功" ]);
+                        // 結果をバインド
+                        $stmt_goal7->bind_result($goal7);
+                        
+                        // 結果をフェッチして表示
+                        $stmt_goal7->fetch();
+                        echo "取得成功";
+                        $messages.array_push($messages, ["type" => "text", "text" =>  $goal7 ]);
+                    } else {
+                        echo "Error: " . $stmt_goal7->error;
+                        $messages.array_push($messages, ["type" => "text", "text" =>  "実行エラー" ]);
+                    }
+                    $conn->close();
+                }
+                else if($local_continuity / 3 == 7){
+                    $messages.array_push($messages, ["type" => "text", "text" =>  "8週目です．折り返しです！" ]);
+
+                    // $userIdの目標8を取得
+                    $sql_goal8 = "SELECT goal8 FROM goals WHERE user_id = \"$userId\"";
+                    $conn = new mysqli($dbdsn, $userName, $pass, $dbname);
+                    // プリペアドステートメントを使用してSQLインジェクションを防ぐ
+                    $stmt_goal8 = $conn->prepare($sql_goal8);
+                    if ($stmt_goal8 === false) {
+                        //エラーメッセージを表示
+                        echo "". $conn->error;
+                        $messages.array_push($messages, ["type" => "text", "text" =>  $conn->error ]);
+                    } else {
+                        // $messages.array_push($messages, ["type" => "text", "text" =>  "インジェクションのとこ成功" ]);
+                    }
+
+                    // パラメータをバインドする
+                    $stmt_goal8->bind_param("s", $userId);
+
+                    // SQL文を実行する
+                    if ($stmt_goal8->execute()) {
+                        // echo "New records created successfully";
+                        // $messages.array_push($messages, ["type" => "text", "text" =>  "実行成功" ]);
+                        // 結果をバインド
+                        $stmt_goal8->bind_result($goal8);
+                        
+                        // 結果をフェッチして表示
+                        $stmt_goal8->fetch();
+                        echo "取得成功";
+                        $messages.array_push($messages, ["type" => "text", "text" =>  $goal8 ]);
+                    } else {
+                        echo "Error: " . $stmt_goal8->error;
+                        $messages.array_push($messages, ["type" => "text", "text" =>  "実行エラー" ]);
+                    }
+                    $conn->close();
+                }
+                //     $sql1 = "SELECT goal1 FROM goals WHERE user_id = \"$userId\"";
+                //     if ($conn instanceof mysqli && $conn->connect_error == null) {
+                //         $messages[] = ["type" => "text", "text" => "データベースへの接続が正しく確立されました。"];
+                //     } else {
+                //         $messages[] = ["type" => "text", "text" => "データベース接続に失敗しました。エラー: " . $conn->connect_error];
+                //     }
+
+
+                //     if (isset($sql1) && !empty($sql1)) {
+                //         // SQL変数が正しくセットされ、空でないことを確認
+                //         $messages.array_push($messages, ["type" => "text", "text" => "SQL is set and not empty: " . $sql1]);
+                //     } else {
+                //         // SQL変数がセットされていない、または空の場合のメッセージ
+                //         $messages.array_push($messages, ["type" => "text", "text" => "SQL is not set or empty"]);
+                //     }
+                
+                //     // プリペアドステートメントを使用してSQLインジェクションを防ぐ
+                //     $stmt1 = $conn->prepare($sql1);
+
+                //     if (!$stmt1) {
+                //         //エラーメッセージを表示
+                //         echo "Prepare failed: " . $conn->error;
+                //         $messages.array_push($messages, ["type" => "text", "text" => "Prepare failed: " . $conn->error]);
+                //     } else {
+                //         // パラメータをバインドする
+                //         $stmt1->bind_param("s", $userId);
+                
+                //         // SQL文を実行する
+                //         if ($stmt1->execute()) {
+                //             // 結果をバインド
+                //             $stmt1->bind_result($goal1);
+                            
+                //             // 結果をフェッチして表示
+                //             if ($stmt1->fetch()) {
+                //                 echo "goal1の値: " . $goal1;
+                //                 $messages.array_push($messages, ["type" => "text", "text" => $goal1]);
+                //                 echo "取得成功";
+                //                 $messages.array_push($messages, ["type" => "text", "text" => "取得成功"]);
+                //             } else {
+                //                 echo "Fetch failed";
+                //                 $messages.array_push($messages, ["type" => "text", "text" => "Fetch failed"]);
+                //             }
+                //         } else {
+                //             echo "Execute failed: " . $stmt->error;
+                //             $messages.array_push($messages, ["type" => "text", "text" => "Execute failed: " . $stmt1->error]);
+                //         }
+                //     }
+                // } else {
+                //     echo "Error: " . $stmt->error;
+                //     $messages.array_push($messages, ["type" => "text", "text" =>  "実行エラー" ]);
+                // }
+                
+
+            //     echo "goal1の値: " . $local_continuity;
+            //     // $messages.array_push($messages, ["type" => "text", "text" => $continuity ]);
+
+            //     echo "取得成功";
+            //     // $messages.array_push($messages, ["type" => "text", "text" =>  "取得成功" ]);
+            // } 
+            // else {
+            //     echo "Error: " . $stmt1->error;
+            //     $messages.array_push($messages, ["type" => "text", "text" =>  "実行エラー" ]);
+            // }   
+            
+                $conn->close();
+            } 
+            else if ($text == "目標変更") { // 「目標変更」というメッセージがユーザから来たとき
                 $messages.array_push($messages, ["type" => "text", "text" =>  $text ]);
-            } else {
+            } 
+            else {
                 $userId = $event->{'source'}->{'userId'};
                 $continuity = 0;
 
@@ -227,7 +545,7 @@ function main() {
                 $output_lines = explode("\n", $answer);// 出力を一行ごとに分割して配列に格納
 
                 $messages.array_push($messages, ["type" => "text", "text" =>  gettype($userId) ]);
-                $sql = "INSERT INTO goals (user_id, goal1, goal2, goal3, goal4, goal5, goal6, goal7, goal8, continuity) VALUES (\"$userId\" , \"$output_lines[0]\", \"$output_lines[1]\", \"$output_lines[2]\", \"$output_lines[3]\", \"$output_lines[4]\", \"$output_lines[5]\", \"$output_lines[6]\", \"$output_lines[7]\", $continuity )";
+                $sql = "INSERT INTO goals (user_id, goal1, goal2, goal3, goal4, goal5, goal6, goal7, goal8,continuity) VALUES (\"$userId\" , \"$output_lines[0]\", \"$output_lines[1]\", \"$output_lines[2]\", \"$output_lines[3]\", \"$output_lines[4]\", \"$output_lines[5]\", \"$output_lines[6]\", \"$output_lines[7]\", $continuity )";
 
                 // プリペアドステートメントを使用してSQLインジェクションを防ぐ
                 $stmt = $conn->prepare($sql);
