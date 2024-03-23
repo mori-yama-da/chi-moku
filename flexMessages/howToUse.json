@@ -1,0 +1,81 @@
+{
+    "type": "flex",
+    "altText": "Carousel Message",
+    "contents": {
+        "type": "carousel",
+        "contents": [
+            {
+                "type": "bubble",
+                "header": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": "達成したい目標を設定してみよう！",
+                            "weight": "bold",
+                            "size": "xl",
+                            "color": "#ffffff",
+                            "align": "center"
+                        }
+                    ],
+                    "backgroundColor": "#50B354"
+                },
+                "hero": {
+                    "type": "image",
+                    "url": "https://www3.yoslab.net/~ida/chatbot_www3_ida/img/HowToUse1.png",
+                    "size": "full",
+                    "aspectMode": "fit"
+                }
+            },
+            {
+                "type": "bubble",
+                "header": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": "目標をステップアップさせよう！",
+                            "weight": "bold",
+                            "size": "xl",
+                            "color": "#ffffff",
+                            "align": "center"
+                        }
+                    ],
+                    "backgroundColor": "#50B354"
+                },
+                "hero": {
+                    "type": "image",
+                    "url": "https://www3.yoslab.net/~ida/chatbot_www3_ida/img/HowToUse2.png",
+                    "size": "full",
+                    "aspectMode": "fit"
+                }
+            },
+            {
+                "type": "bubble",
+                "header": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": "いつの間にか本当の目標を達成！？",
+                            "weight": "bold",
+                            "size": "xl",
+                            "color": "#ffffff",
+                            "align": "center"
+                        }
+                    ],
+                    "backgroundColor": "#50B354"
+                },
+                "hero": {
+                    "type": "image",
+                    "url": "https://www3.yoslab.net/~ida/chatbot_www3_ida/img/HowToUse3.png",
+                    "size": "full",
+                    "aspectMode": "fit"
+                }
+            }
+        ]
+    }
+}

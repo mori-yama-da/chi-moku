@@ -1,0 +1,49 @@
+{
+    "type": "flex",
+    "altText": "目標変更確認",
+    "contents": {
+        "type": "bubble",
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": "目標変更",
+                    "weight": "bold",
+                    "size": "xl"
+                },
+                {
+                    "type": "text",
+                    "text": "目標を変更しますか？",
+                    "margin": "lg",
+                    "wrap": true
+                }
+            ]
+        },
+        "footer": {
+            "type": "box",
+            "layout": "horizontal",
+            "contents": [
+                {
+                    "type": "button",
+                    "action": {
+                        "type": "postback",
+                        "label": "はい",
+                        "data": "action=yes"
+                    },
+                    "style": "primary"
+                },
+                {
+                    "type": "button",
+                    "action": {
+                        "type": "postback",
+                        "label": "いいえ",
+                        "data": "action=no"
+                    },
+                    "style": "secondary"
+                }
+            ]
+        }
+    }
+}
