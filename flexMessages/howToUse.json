@@ -14,7 +14,7 @@
                             "type": "text",
                             "text": "達成したい目標を設定してみよう！",
                             "weight": "bold",
-                            "size": "xl",
+                            "size": "md",
                             "color": "#ffffff",
                             "align": "center"
                         }
@@ -38,7 +38,7 @@
                             "type": "text",
                             "text": "目標をステップアップさせよう！",
                             "weight": "bold",
-                            "size": "xl",
+                            "size": "md",
                             "color": "#ffffff",
                             "align": "center"
                         }
@@ -62,7 +62,7 @@
                             "type": "text",
                             "text": "いつの間にか本当の目標を達成！？",
                             "weight": "bold",
-                            "size": "xl",
+                            "size": "md",
                             "color": "#ffffff",
                             "align": "center"
                         }

@@ -28,6 +28,33 @@ function main() {
 
             // 目標を達成したとき
             if($text == "ちいもく達成！") {
+                //ユーザIDが存在するか確認
+                $userId_count = countUserID($userId);
+                //ユーザIDが存在しない場合
+                if ($userId_count == 0) {
+                    // 目標入力を促して終了
+                    $messages.array_push($messages, ["type" => "text", "text" => "まずは目標を設定してね"]);
+                    sendMessage([
+                        "replyToken" => $replyToken,
+                        "messages" => $messages
+                    ]);
+                    break;
+                }
+
+                //データベースからユーザの継続数を取得
+                $old_continuity = getContinuity($userId);
+                
+                //ユーザが全ての目標を達成しているか確認
+                if($old_continuity >= 24) {
+                    //目標を全て達成していることを伝えて終了
+                    $messages.array_push($messages, ["type" => "text", "text" => "目標は既に達成済みです\n新しい目標を設定してね" ]);
+                    sendMessage([
+                        "replyToken" => $replyToken,
+                        "messages" => $messages
+                    ]);
+                    break;
+                }
+
                 //今日の日付を取得
                 $today = date("Y-m-d");
 
@@ -35,9 +62,10 @@ function main() {
                 $achievement_date = getAchievementDate($userId);
 
                 //前回の達成日が今日でない場合
-                if (/*$achievement_date != $today*/true) {
+                if ($achievement_date != $today) {
                     //データベースのcontinuityを更新
                     updateContinuity($userId);
+
                     //データベースからユーザの継続数を取得
                     $now_continuity = getContinuity($userId);
                     
@@ -57,24 +85,24 @@ function main() {
                         $goal = getGoal($userId);
                         
                         //最終目標達成以外を達成したとき
-                        if($completion_goaln < 8) {
+                        if($quotient < 8) {
                             //データベースから次の目標を取得
                             $goaln = getGoaln($now_continuity, $userId);
                             //データベースから前回の目標を取得
                             $old_goaln = getGoaln($now_continuity - 1, $userId);
                             //最終目標達成時のメッセージ送信
-                            $messages.array_push($messages, ["type" => "text", "text" => $old_goaln . "\nを達成しました！" ]);
+                            $messages.array_push($messages, ["type" => "text", "text" => $old_goaln . "を達成しました！" ]);
                             //最終目標達成時の画像送信
                             $messages.array_push($messages, ["type" => "image", "originalContentUrl" => "https://www3.yoslab.net/~ida/chatbot_www3_ida/img/" . $completion_goaln . ".png", "previewImageUrl" => "https://www3.yoslab.net/~ida/chatbot_www3_ida/img/" . $completion_goaln . ".png"]);
                             //次の目標入力を促すメッセージの送信
-                            $messages.array_push($messages, ["type" => "text", "text" => "次の目標は\n" . $goaln . "\nです！引き続き頑張りましょう" ]);
+                            $messages.array_push($messages, ["type" => "text", "text" => "次の目標は\n" . $goaln . "です！引き続き頑張りましょう" ]);
                         }
                         //最終目標達成時
-                        else {
+                        else if ($quotient == 8){
                             //小目標達成時のメッセージ送信
                             $messages.array_push($messages, ["type" => "text", "text" => "おめでとうございます\n" . $goal . "\nを達成しました！" ]);
                             //目標達成時の画像送信
-                            $messages.array_push($messages, ["type" => "image", "originalContentUrl" => "https://www3.yoslab.net/~ida/chatbot_www3_ida/img/" . $completion_goaln . ".png", "previewImageUrl" => "https://www3.yoslab.net/~ida/chatbot_www3_ida/img/" . $completion_goaln . ".png"]);
+                            $messages.array_push($messages, ["type" => "image", "originalContentUrl" => "https://www3.yoslab.net/~ida/chatbot_www3_ida/img/achieve_goal8.png", "previewImageUrl" => "https://www3.yoslab.net/~ida/chatbot_www3_ida/img/achieve_goal8.png" ]);
                             //次の目標を通知
                             $messages.array_push($messages, ["type" => "text", "text" => "次の目標を設定しよう！\nメニューから登録できるよ！" ]);
                         } 
@@ -99,15 +127,6 @@ function main() {
 
                     //前回の達成日を今日にする
                     setAchievementDate($userId);
-                    
-                    /** 動作確認してないから問題あるならここ **/
-                    // // データベースに接続
-                    // $conn = connectDB();
-                    // $sql = "UPDATE goals SET achievement_date = \"$today\" WHERE user_id = \"$userId\"";
-                    // $stmt = $conn->prepare($sql);
-                    // $stmt->bind_param("s", $today);
-                    // $stmt->execute();
-                    // $conn->close();
 
                 } else {
                     $messages.array_push($messages, ["type" => "text", "text" =>  "今日はもう達成しています！" ]);
@@ -134,7 +153,7 @@ function main() {
                         $goaln = getGoaln($continuity, $userId);
                         //現在の目標を通知
                         $messages.array_push($messages, ["type" => "text", "text" =>  "現在の目標は\n" . $goal  ]);
-                        $messages.array_push($messages, ["type" => "text", "text" =>  $goaln  ]);
+                        $messages.array_push($messages, ["type" => "text", "text" =>  "現在の小目標は\n" . $goaln  ]);
 
                         //目標達成途中の画像を送信
                         $going_goaln = "going_goal".((int)($continuity / 3 + 1));
@@ -148,30 +167,29 @@ function main() {
 
                 //ユーザIDが存在しない場合
                 if ($userId_count == 0) {
-                    // // データベースに接続    
-                    // $conn = connectDB();
-                    
-                    // // $userIdとstatusをデータベースに登録
-                    // $sql_add_user = "INSERT INTO goals (user_id, status) VALUES (\"$userId\", 1)";
+                    //$userIdとstatusをデータベースに登録
+                    setInitialValue($userId);
 
-                    // // プリペアドステートメントを使用してSQLインジェクションを防ぐ
-                    // $stmt = $conn->prepare($sql_add_user);
-                    // // パラメータをバインドする
-                    // $stmt->bind_param("s", $userId);
-                    // // SQL文を実行する
-                    // $stmt->execute();
-                    // //データベース接続を閉じる
-                    // $conn->close();
                     $messages.array_push($messages, ["type" => "text", "text" => "目標を入力してね"]); // 目標入力を促す
                 } else {
-                    //フレックスメッセージをjsonファイルから取得
-                    //$changeConfirmation_json = file_get_contents('flexMessages/changeConfirmation_postback.json');
-                    $changeConfirmation_json = file_get_contents('flexMessages/changeConfirmation.json');
-                    //JSONをPHPの配列に変換
-                    $changeConfirmationMessage = json_decode($changeConfirmation_json);
+                    //データベースからユーザの達成度合いを取得
+                    $continuity = getContinuity($userId);
+                    //ユーザが目標を達成しているか確認
+                    if ($continuity >= 24) {
+                        //statusを1に変更
+                        setStatus($userId, 1);
+                        $messages.array_push($messages, ["type" => "text", "text" => "新しい目標を入力してね"]); // 達成していた場合，新たな目標入力を促す
+                    } else {
+                        //フレックスメッセージをjsonファイルから取得
+                        //$changeConfirmation_json = file_get_contents('flexMessages/changeConfirmation_postback.json');
+                        $changeConfirmation_json = file_get_contents('flexMessages/changeConfirmation.json');
+                        //JSONをPHPの配列に変換
+                        $changeConfirmationMessage = json_decode($changeConfirmation_json);
+                        
+                        //変更していいかどうかをフレックスメッセージで確認
+                        $messages.array_push($messages, $changeConfirmationMessage);
+                    }
                     
-                    //変更していいかどうかをフレックスメッセージで確認
-                    $messages.array_push($messages, $changeConfirmationMessage);
                 }
             } 
             else if ($text == '変更する') {
@@ -183,7 +201,6 @@ function main() {
                 $messages.array_push($messages, ["type" => "text", "text" => "引き続き目標達成に向けてガンバ！"]); // 適当にコメントを返す
             }
             else if ($text == '使い方を教えて') {
-                //$messages.array_push($messages, ["type" => "text", "text" => "ちいもくは．．．説明めんどくさいな"]); // 適当にコメントを返す
                 //フレックスメッセージをjsonファイルから取得
                 $howToUse_json = file_get_contents('flexMessages/howToUse.json');
                 //JSONをPHPの配列に変換
@@ -198,20 +215,25 @@ function main() {
                 //satausが1（目標入力状態）の場合，目標を設定
                 if ($status == 1) {
                     //入力された目標を小さくしてデータベースに登録
-                    $messages.array_push($messages, ["type" => "text", "text" => "目標：". $text . "を分割します！"]); // 適当にコメントを返す
+                    $messages.array_push($messages, ["type" => "text", "text" => "目標：". $text . "を分割しました！"]); // 適当にコメント返す
+                    // sendMessage([
+                    //     "replyToken" => $replyToken,
+                    //     "messages" => $messages
+                    // ]);
                     //データベースに目標を登録
-                    $answer = setGoals($userId,$text);
+                    // $answer = setGoals($userId,$text);
+                    setGoals($userId,$text);
                     
-                    //statusを0に変更
+                    //statusを0（なんでもない）に変更
                     setStatus($userId, 0);
-                    $messages.array_push($messages, ["type" => "text", "text" => $answer]);
+                    // $messages.array_push($messages, ["type" => "text", "text" => $answer]);
                     
                     //目標設定時の画像送信
                     $messages.array_push($messages, ["type" => "image", "originalContentUrl" => "https://www3.yoslab.net/~ida/chatbot_www3_ida/img/set_goals.png", "previewImageUrl" => "https://www3.yoslab.net/~ida/chatbot_www3_ida/img/set_goals.png" ]);
                     
                     //goal1を通知
                     $goaln = getGoaln(0, $userId);
-                    $messages.array_push($messages, ["type" => "text", "text" => "初めの目標は\n" . $goaln . "です．\n目標達成に向けて頑張りましょう！"]);
+                    $messages.array_push($messages, ["type" => "text", "text" => "初めの目標は\n" . $goaln . "目標達成に向けて頑張りましょう！"]);
                            
                 } else {
                     //適当に励ますコメントを返す
@@ -231,11 +253,20 @@ function main() {
                 
             }
 
-        } else if($type == "sticker") { // メッセージがスタンプのとき
-            $messages.array_push($messages, ["type" => "sticker", "packageId" => "446", "stickerId" => "1988"]); // 適当なステッカーを返す
+        } else { // テキスト以外のメッセージのとき
+            //適当に励ますコメントを返す
+            // 励ましのコメントリスト
+            $comments = [
+                "継続は力なり！頑張り続ければ、きっと良い結果が待っています。",
+                "コツコツと積み重ねることが、大きな成果につながります。",
+                "毎日少しずつ進歩を重ねていきましょう。継続は力なり！",
+                "挑戦を続けることで、自分自身の成長につながります。",
+                "一歩一歩前に進むことが、大きな飛躍への道です。"
+            ];
 
-        } else { // その他は無視．必要に応じて追加．
-            return;
+            // ランダムにコメントを選んで送信
+            $selected_comment = $comments[array_rand($comments)];
+            $messages.array_push($messages, ["type" => "text", "text" => $selected_comment]);
         }
 
         sendMessage([
@@ -485,27 +516,27 @@ function setGoals($userId, $goal)
         \n\n目標：" . $goal;
 
     // chatGPTにプロンプトを送信して返答を取得
-    // $answer = call_chatGPT($prompt);
-    $answer = "小目標1：運動用のマットを購入するsmile\n小目標2：運動のための時間を設定するhappy\n小目標3：運動着を用意するsmile\n小目標4：ストレッチを始める\n小目標5：腹筋運動を10回行う\n小目標6：腹筋運動を30回行う\n小目標7：腹筋運動を50回行う\n小目標8：腹筋運動を100回行う";
+    $answer = call_chatGPT($prompt);
+    // $answer = "小目標1：運動用のマットを購入するsmile\n小目標2：運動のための時間を設定するhappy\n小目標3：運動着を用意するsmile\n小目標4：ストレッチを始める\n小目標5：腹筋運動を10回行う\n小目標6：腹筋運動を30回行う\n小目標7：腹筋運動を50回行う\n小目標8：腹筋運動を100回行う";
     
     
     // データベースに接続    
     $conn = connectDB();
 
     // 小目標を一行ごとに分割して配列に格納
-    $output_lines = explode("\n", $answer);
+    $output_lines = explode("小目標", $answer);
 
     // 達成日を初期化
     $ancient_date = '2024-03-03';
 
     // $userIdと一致するユーザの目標・小目標，達成日の初期値を登録
-    $sql = "UPDATE goals SET goal = \"$goal\", goal1 = \"$output_lines[0]\", goal2 = \"$output_lines[1]\", goal3 = \"$output_lines[2]\", goal4 = \"$output_lines[3]\", goal5 = \"$output_lines[4]\", goal6 = \"$output_lines[5]\", goal7 = \"$output_lines[6]\", goal8 = \"$output_lines[7]\", continuity = 0, achievement_date = \"$ancient_date\" WHERE user_id = \"$userId\"";
+    $sql = "UPDATE goals SET goal = \"$goal\", goal1 = \"$output_lines[1]\", goal2 = \"$output_lines[2]\", goal3 = \"$output_lines[3]\", goal4 = \"$output_lines[4]\", goal5 = \"$output_lines[5]\", goal6 = \"$output_lines[6]\", goal7 = \"$output_lines[7]\", goal8 = \"$output_lines[8]\", continuity = 0, achievement_date = \"$ancient_date\" WHERE user_id = \"$userId\"";
     
     // プリペアドステートメントを使用してSQLインジェクションを防ぐ
     $stmt = $conn->prepare($sql);
 
     // パラメータをバインドする
-    $stmt->bind_param("sssssssssss", $userId, $goal, $output_lines[0], $output_lines[1], $output_lines[2], $output_lines[3], $output_lines[4], $output_lines[5], $output_lines[6], $output_lines[7], $ancient);
+    $stmt->bind_param("sssssssssss", $userId, $goal, $output_lines[1], $output_lines[2], $output_lines[3], $output_lines[4], $output_lines[5], $output_lines[6], $output_lines[7], $output_lines[8], $ancient);
 
     // SQL文を実行する
     $stmt->execute();
@@ -515,33 +546,6 @@ function setGoals($userId, $goal)
 
     //分割された目標を返す
     return $answer;
-}
-
-/**
- * 初期値を設定
- * ユーザIDが存在しないユーザに対して，IDとstatusをデータベースに登録する
- * 
- * @param string $userId
- * @return void
- */
-function setInitialValue($userId) {
-    // データベースに接続    
-    $conn = connectDB();
-    
-    // $userIdとstatusをデータベースに登録
-    $sql_add_user = "INSERT INTO goals (user_id, status) VALUES (\"$userId\", 1)";
-
-    // プリペアドステートメントを使用してSQLインジェクションを防ぐ
-    $stmt = $conn->prepare($sql_add_user);
-
-    // パラメータをバインドする
-    $stmt->bind_param("s", $userId);
-
-    // SQL文を実行する
-    $stmt->execute();
-
-    //データベース接続を閉じる
-    $conn->close();
 }
 
 /**
@@ -670,6 +674,33 @@ function setAchievementDate($userId) {
 
     // パラメータをバインドする
     $stmt->bind_param("s", $today);
+
+    // SQL文を実行する
+    $stmt->execute();
+
+    //データベース接続を閉じる
+    $conn->close();
+}
+
+/**
+ * 初期値を設定
+ * ユーザIDが存在しないユーザに対して，IDとstatusをデータベースに登録する
+ * 
+ * @param string $userId
+ * @return void
+ */
+function setInitialValue($userId) {
+    // データベースに接続    
+    $conn = connectDB();
+    
+    // $userIdとstatusをデータベースに登録
+    $sql_add_user = "INSERT INTO goals (user_id, status) VALUES (\"$userId\", 1)";
+
+    // プリペアドステートメントを使用してSQLインジェクションを防ぐ
+    $stmt = $conn->prepare($sql_add_user);
+
+    // パラメータをバインドする
+    $stmt->bind_param("s", $userId);
 
     // SQL文を実行する
     $stmt->execute();
